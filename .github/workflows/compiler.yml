@@ -35,7 +35,7 @@ jobs:
         name: win-artifact
         path: win-out/msit.exe
 
-  # --- TRABALHO 2: COMPILAR PARA LINUX E ENVIAR AMBOS ---
+  # --- TRABALHO 2: COMPILAR PARA LINUX (X86_64 E ARM64) E ENVIAR TUDO ---
   build-linux-and-upload:
     needs: build-windows
     runs-on: ubuntu-latest
@@ -52,29 +52,33 @@ jobs:
         name: win-artifact
         path: code/compiled
 
-    - name: Instalar compilador G++ moderno para Linux
+    - name: Instalar compiladores G++ (Padrão e Cross-Compilador ARM64)
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++
+        sudo apt-get install -y g++ g++-aarch64-linux-gnu
 
     - name: Criar a pasta de destino se não existir
       run: mkdir -p code/compiled
 
-    - name: Compilar o executável Linux (Linux ignora o arquivo .rc)
+    - name: Compilar para Linux Desktop (x86_64)
       run: |
         g++ -std=c++17 code/compile/main.cpp -o code/compiled/msit
+
+    - name: Compilar para Linux ARM64 (Compatível com Termux)
+      run: |
+        aarch64-linux-gnu-g++ -std=c++17 code/compile/main.cpp -o code/compiled/msit_arm64
 
     - name: Enviar os arquivos de volta para o repositório (code/compiled)
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add code/compiled/msit.exe code/compiled/msit
-        git commit -m "Auto: Executáveis com Ícone e Fornecedor atualizados via Issue #${{ github.event.issue.number }}"
+        git add code/compiled/msit.exe code/compiled/msit code/compiled/msit_arm64
+        git commit -m "Auto: Executáveis (Windows, Linux x64, Linux ARM64) atualizados via Issue #${{ github.event.issue.number }}"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Responder na Issue avisando que salvou ambos os arquivos
+    - name: Responder na Issue avisando que salvou todos os arquivos
       uses: actions/github-script@v7
       with:
         script: |
@@ -86,6 +90,6 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: issueNumber,
-            body: `### ✅ Compilação com Ícone e Fornecedor Concluída!\n\nOs seus executáveis foram gerados com sucesso.\n\n* 🖥️ **Windows:** \`msit.exe\` (Com ícone e informações de 'The Blu3sky' embutidos)\n* 🐧 **Linux:** \`msit\`\n\n[📂 Clique aqui para abrir a pasta code/compiled](${folderUrl})`
+            body: `### ✅ Compilação Multiplataforma Concluída!\n\nOs seus executáveis foram gerados com sucesso:\n\n* 🖥️ **Windows:** \`msit.exe\` (Com ícone/fornecedor embutidos)\n* 🐧 **Linux PC (x86_64):** \`msit\`\n* 📱 **Linux Mobile (ARM64/Termux):** \`msit_arm64\`\n\n[📂 Clique aqui para abrir a pasta code/compiled](${folderUrl})`
           });
           
