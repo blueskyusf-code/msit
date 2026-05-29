@@ -27,13 +27,13 @@ jobs:
 
     - name: Compilar o executável Windows juntando o ícone
       run: |
-        cl.exe /EHsc /std:c++17 code/compile/main.cpp code/compile/resources.res /Fe:win-out/compiled.exe
+        cl.exe /EHsc /std:c++17 code/compile/main.cpp code/compile/resources.res /Fe:win-out/msit.exe
 
     - name: Salvar executável do Windows temporariamente
       uses: actions/upload-artifact@v4
       with:
         name: win-artifact
-        path: win-out/compiled.exe
+        path: win-out/msit.exe
 
   # --- TRABALHO 2: COMPILAR PARA LINUX E ENVIAR AMBOS ---
   build-linux-and-upload:
@@ -62,7 +62,7 @@ jobs:
 
     - name: Compilar o executável Linux (Linux ignora o arquivo .rc)
       run: |
-        g++ -std=c++17 code/compile/main.cpp -o code/compiled/compiled
+        g++ -std=c++17 code/compile/main.cpp -o code/compiled/msit
 
     - name: Enviar os arquivos de volta para o repositório (code/compiled)
       run: |
