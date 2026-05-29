@@ -1,0 +1,87 @@
+name: Compilar EXE e Linux via Issue
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  # --- TRABALHO 1: COMPILAR PARA WINDOWS ---
+  build-windows:
+    if: contains(github.event.issue.title, 'Compile AGOR-') || contains(github.event.comment.body, 'Compile AGOR-')
+    runs-on: windows-latest
+    steps:
+    - name: Baixar o código do repositório
+      uses: actions/checkout@v4
+
+    - name: Configurar o compilador MSVC (Windows)
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Criar pasta temporária
+      run: mkdir win-out
+
+    - name: Compilar o executável Windows (.exe)
+      run: |
+        cl.exe /EHsc /std:c++17 code/compile/main.cpp /Fe:win-out/compiled.exe
+
+    - name: Salvar executável do Windows temporariamente
+      uses: actions/upload-artifact@v4
+      with:
+        name: win-artifact
+        path: win-out/compiled.exe
+
+  # --- TRABALHO 2: COMPILAR PARA LINUX E ENVIAR AMBOS ---
+  build-linux-and-upload:
+    needs: build-windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+    - name: Baixar o código do repositório
+      uses: actions/checkout@v4
+
+    - name: Baixar o executável do Windows gerado no passo anterior
+      uses: actions/download-artifact@v4
+      with:
+        name: win-artifact
+        path: code/compiled
+
+    - name: Instalar compilador G++ moderno para Linux
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++
+
+    - name: Criar a pasta de destino se não existir
+      run: mkdir -p code/compiled
+
+    - name: Compilar o executável Linux (sem extensão)
+      run: |
+        g++ -std=c++17 code/compile/main.cpp -o code/compiled/compiled
+
+    - name: Enviar os arquivos de volta para o repositório (code/compiled)
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add code/compiled/compiled.exe code/compiled/compiled
+        git commit -m "Auto: Executáveis Windows e Linux atualizados via Issue #${{ github.event.issue.number }}"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Responder na Issue avisando que salvou ambos os arquivos
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const issueNumber = context.issue.number;
+          const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+          const folderUrl = `${repoUrl}/tree/main/code/compiled`;
+          
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: issueNumber,
+            body: `### ✅ Compilação Multiplataforma Concluída!\n\nOs seus executáveis foram gerados com sucesso e salvos na pasta de destino:\n\n* 🖥️ **Windows:** \`compiled.exe\`\n* 🐧 **Linux:** \`compiled\`\n\n[📂 Clique aqui para abrir a pasta code/compiled](${folderUrl})`
+          });
+          
