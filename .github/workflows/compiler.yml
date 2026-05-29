@@ -7,7 +7,7 @@ on:
     types: [created]
 
 jobs:
-  # --- TRABALHO 1: COMPILAR PARA WINDOWS ---
+  # --- TRABALHO 1: COMPILAR PARA WINDOWS (COM ÍCONE E FORNECEDOR) ---
   build-windows:
     if: contains(github.event.issue.title, 'Compile AGOR-') || contains(github.event.comment.body, 'Compile AGOR-')
     runs-on: windows-latest
@@ -21,9 +21,13 @@ jobs:
     - name: Criar pasta temporária
       run: mkdir win-out
 
-    - name: Compilar o executável Windows (.exe)
+    - name: Compilar o arquivo de recursos (Ícone e Fornecedor)
       run: |
-        cl.exe /EHsc /std:c++17 code/compile/main.cpp /Fe:win-out/compiled.exe
+        rc.exe /fo code/compile/resources.res code/compile/resources.rc
+
+    - name: Compilar o executável Windows juntando o ícone
+      run: |
+        cl.exe /EHsc /std:c++17 code/compile/main.cpp code/compile/resources.res /Fe:win-out/compiled.exe
 
     - name: Salvar executável do Windows temporariamente
       uses: actions/upload-artifact@v4
@@ -56,7 +60,7 @@ jobs:
     - name: Criar a pasta de destino se não existir
       run: mkdir -p code/compiled
 
-    - name: Compilar o executável Linux (sem extensão)
+    - name: Compilar o executável Linux (Linux ignora o arquivo .rc)
       run: |
         g++ -std=c++17 code/compile/main.cpp -o code/compiled/compiled
 
@@ -65,7 +69,7 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git add code/compiled/compiled.exe code/compiled/compiled
-        git commit -m "Auto: Executáveis Windows e Linux atualizados via Issue #${{ github.event.issue.number }}"
+        git commit -m "Auto: Executáveis com Ícone e Fornecedor atualizados via Issue #${{ github.event.issue.number }}"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,6 +86,6 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: issueNumber,
-            body: `### ✅ Compilação Multiplataforma Concluída!\n\nOs seus executáveis foram gerados com sucesso e salvos na pasta de destino:\n\n* 🖥️ **Windows:** \`compiled.exe\`\n* 🐧 **Linux:** \`compiled\`\n\n[📂 Clique aqui para abrir a pasta code/compiled](${folderUrl})`
+            body: `### ✅ Compilação com Ícone e Fornecedor Concluída!\n\nOs seus executáveis foram gerados com sucesso.\n\n* 🖥️ **Windows:** \`compiled.exe\` (Com ícone e informações de 'The Blu3sky' embutidos)\n* 🐧 **Linux:** \`compiled\`\n\n[📂 Clique aqui para abrir a pasta code/compiled](${folderUrl})`
           });
           
